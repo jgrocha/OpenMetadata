@@ -13,13 +13,14 @@
 
 import { Button, Dropdown, Modal, Tooltip, Typography } from 'antd';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import classNames from 'classnames';
 import { capitalize, isUndefined } from 'lodash';
 import React, { FC, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReactComponent as IconAnnouncementsBlack } from '../../../../assets/svg/announcements-black.svg';
 import { ReactComponent as EditIcon } from '../../../../assets/svg/edit-new.svg';
+import { ReactComponent as TableIcon } from '../../../../assets/svg/plus-outlined.svg';
 import { ReactComponent as IconDelete } from '../../../../assets/svg/ic-delete.svg';
 import { ReactComponent as IconRestore } from '../../../../assets/svg/ic-restore.svg';
 import { ReactComponent as IconSetting } from '../../../../assets/svg/ic-settings-gray.svg';
@@ -34,6 +35,9 @@ import DeleteWidgetModal from '../../DeleteWidget/DeleteWidgetModal';
 import { ManageButtonItemLabel } from '../../ManageButtonContentItem/ManageButtonContentItem.component';
 import { ManageButtonProps } from './ManageButton.interface';
 import './ManageButton.less';
+import { useHistory } from 'react-router-dom';
+import { getOidcToken } from '../../../../utils/LocalStorageUtils';
+import AddTableModal from '../../../Modals/AddTableModal/AddTableModal.component';
 
 const ManageButton: FC<ManageButtonProps> = ({
   allowSoftDelete,
@@ -43,6 +47,7 @@ const ManageButton: FC<ManageButtonProps> = ({
   softDeleteMessagePostFix,
   hardDeleteMessagePostFix,
   entityName,
+  entityFQN,
   displayName,
   entityType,
   canDelete,
@@ -63,9 +68,11 @@ const ManageButton: FC<ManageButtonProps> = ({
 }) => {
   const { t } = useTranslation();
   const [isDelete, setIsDelete] = useState<boolean>(false);
+  const [isAdd, setIsAdd] = useState<boolean>(false);
   const [isEntityRestoring, setIsEntityRestoring] = useState<boolean>(false);
   const [showReactiveModal, setShowReactiveModal] = useState(false);
   const [isDisplayNameEditing, setIsDisplayNameEditing] = useState(false);
+  const history = useHistory();
 
   const isProfilerSupported = useMemo(
     () =>
@@ -97,6 +104,38 @@ const ManageButton: FC<ManageButtonProps> = ({
     } finally {
       setIsDisplayNameEditing(false);
     }
+  };
+ 
+  const handleNewTable = async (data: EntityName) => {
+
+    if (data.displayName){
+      const token = getOidcToken()
+      
+      // Create Headers
+      const headers = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      const name = data.displayName.trim().replace(' ', '_').replace(/[-:,\(\)]/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      
+      // Create Table
+      const table = {
+        "columns": [],
+        "databaseSchema": entityFQN,
+        "name": name,
+        "displayName" : data.displayName
+      }
+
+      // Make request
+      await axios.put('/api/v1/tables', table, headers);
+      setIsAdd(false);
+
+      // Success redirect
+      history.push("/table/" + entityFQN + '.' + name);
+    }else{
+      setIsAdd(false);
+    }
+
   };
 
   const showAnnouncementOption = useMemo(
@@ -185,6 +224,27 @@ const ManageButton: FC<ManageButtonProps> = ({
         ] as ItemType[])
       : []),
     ...(extraDropdownContent ?? []),
+    ...(isProfilerSupported && entityType == 'databaseSchema' 
+      ? ([
+        {
+          label: (
+            <ManageButtonItemLabel
+              description={t('label.add') + ' '+ t('label.table')}
+              icon={TableIcon}
+              id="add-button"
+              name={t('label.add')}
+            />
+          ),
+          onClick: (e) => {
+            if (canDelete) {
+              e.domEvent.stopPropagation();
+              setIsAdd(true);
+            }
+          },
+          key: 'add-button',
+        },
+      ] as ItemType[])
+    : []),
     ...(isProfilerSupported
       ? ([
           {
@@ -284,6 +344,18 @@ const ManageButton: FC<ManageButtonProps> = ({
           successMessage={successMessage}
           visible={isDelete}
           onCancel={() => setIsDelete(false)}
+        />
+      )}
+      {isAdd && (
+        <AddTableModal
+          allowRename={allowRename}
+          entity={{
+            name: '',
+          }}
+          title={t('label.add') + ' '+ t('label.table')}
+          visible={isAdd}
+          onCancel={() => setIsAdd(false)}
+          onSave={handleNewTable}
         />
       )}
       {onEditDisplayName && isDisplayNameEditing && (
