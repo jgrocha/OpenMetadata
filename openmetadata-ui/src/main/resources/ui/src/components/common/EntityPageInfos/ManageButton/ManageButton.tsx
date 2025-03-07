@@ -314,8 +314,8 @@ const ManageButton: FC<ManageButtonProps> = ({
             <Tooltip
               placement="topRight"
               title={t('label.manage-entity', {
-                entity: capitalize(entityType),
-              })}>
+                entity: t(`label.${entityType}`),
+              })}>                     
               <Button
                 className={classNames('flex-center px-1.5', buttonClassName)}
                 data-testid="manage-button"

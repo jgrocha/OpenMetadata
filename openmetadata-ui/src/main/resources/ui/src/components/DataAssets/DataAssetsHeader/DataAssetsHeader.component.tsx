@@ -567,7 +567,7 @@ export const DataAssetsHeader = ({
                   <Tooltip
                     title={t('label.field-entity', {
                       field: t(`label.${isFollowing ? 'un-follow' : 'follow'}`),
-                      entity: capitalize(entityType),
+                      entity: t(`label.${entityType}`),
                     })}>
                     <Button
                       className="w-16 p-0"
