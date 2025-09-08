@@ -143,7 +143,7 @@ export const getSupportedPipelineTypes = (serviceDetails: ServicesType) => {
   const pipelineType: PipelineType[] = [];
   const config = serviceDetails?.connection?.config as Connection;
 
-  if (isUndefined(config)) {
+  if (isUndefined(config) && serviceDetails?.serviceType !== 'CustomDatabase') {
     return [PipelineType.Metadata];
   }
 
@@ -163,8 +163,10 @@ export const getSupportedPipelineTypes = (serviceDetails: ServicesType) => {
   Object.keys(pipelineMapping).forEach((key) => {
     if (config[key as keyof Connection]) {
       pipelineType.push(...pipelineMapping[key]);
+    } else if (serviceDetails?.serviceType === 'CustomDatabase' && (key === 'supportsMetadataExtraction' || key === 'supportsProfiler')) {
+      pipelineType.push(...pipelineMapping[key]);
     }
-  });
+  });  
 
   return uniq(pipelineType);
 };

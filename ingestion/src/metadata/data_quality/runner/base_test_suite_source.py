@@ -14,6 +14,7 @@ Base source for the data quality used to instantiate a data quality runner with 
 """
 from copy import deepcopy
 from typing import Optional, cast
+from venv import logger
 
 from metadata.data_quality.builders.validator_builder import ValidatorBuilder
 from metadata.data_quality.interface.test_suite_interface import TestSuiteInterface
@@ -36,7 +37,8 @@ from metadata.utils.service_spec.service_spec import (
     import_sampler_class,
     import_test_suite_class,
 )
-
+from metadata.profiler.excel_profile import ExcelProfiler
+from metadata.utils.logger import test_suite_logger
 
 class BaseTestSuiteRunner:
     """Base class for the data quality runner"""
@@ -58,6 +60,10 @@ class BaseTestSuiteRunner:
             config.source.sourceConfig.config
         )
         self.ometa_client = ometa_client
+        
+        logger.info('---------------------service_connection.config.connectionOptions.root[nome]----------------')       
+        logger.info(service_connection.config.connectionOptions.root['nome'])          
+        self.base_dir = service_connection.config.connectionOptions.root['nome']
 
     @property
     def interface(self) -> Optional[TestSuiteInterface]:
@@ -99,40 +105,64 @@ class BaseTestSuiteRunner:
         Returns:
             TestSuiteInterface: a data quality interface
         """
-        schema_entity, database_entity, _ = get_context_entities(
-            entity=self.entity, metadata=self.ometa_client
-        )
-        test_suite_class = import_test_suite_class(
-            ServiceType.Database,
-            source_type=self._interface_type,
-            source_config_type=self.service_conn_config.type.value,
-        )
-        sampler_class = import_sampler_class(
-            ServiceType.Database,
-            source_type=self._interface_type,
-            source_config_type=self.service_conn_config.type.value,
-        )
-        # This is shared between the sampler and DQ interfaces
-        sampler_interface: SamplerInterface = sampler_class.create(
-            service_connection_config=self.service_conn_config,
-            ometa_client=self.ometa_client,
-            entity=self.entity,
-            schema_entity=schema_entity,
-            database_entity=database_entity,
-            default_sample_config=SampleConfig(
-                profileSample=self.source_config.profileSample,
-                profileSampleType=self.source_config.profileSampleType,
-                samplingMethodType=self.source_config.samplingMethodType,
-            ),
-        )
 
-        self.interface: TestSuiteInterface = test_suite_class.create(
-            service_connection_config=self.service_conn_config,
-            ometa_client=self.ometa_client,
-            sampler=sampler_interface,
-            table_entity=self.entity,
-            validator_builder=self.validator_builder_class,
-        )
+        if 'customdatabase' in self._interface_type:
+            ##Get extensions
+            
+            table = self.ometa_client.get_by_id(
+                entity=Table, entity_id=self.entity.id.root, fields=['*']
+            )
+
+            if 'resource' in table.extension.root and self.base_dir is not None:
+                ficheiro = table.extension.root['resource']
+                
+                valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
+                if not any(ficheiro.endswith(ext) for ext in valid_extensions):
+                    logger.error('ERROR: File extension not supported.')
+                    return None
+
+                profile = ExcelProfiler(table, self.base_dir, ficheiro, self.validator_builder_class)
+                self.interface = profile.setUp()
+                self.interface.ometa_client=self.ometa_client
+            else:
+                logger.error('ERROR: Resource property not found.')
+                return None
+                
+        else:
+            schema_entity, database_entity, _ = get_context_entities(
+                entity=self.entity, metadata=self.ometa_client
+            )
+            test_suite_class = import_test_suite_class(
+                ServiceType.Database,
+                source_type=self._interface_type,
+                source_config_type=self.service_conn_config.type.value,
+            )
+            sampler_class = import_sampler_class(
+                ServiceType.Database,
+                source_type=self._interface_type,
+                source_config_type=self.service_conn_config.type.value,
+            )
+            # This is shared between the sampler and DQ interfaces
+            sampler_interface: SamplerInterface = sampler_class.create(
+                service_connection_config=self.service_conn_config,
+                ometa_client=self.ometa_client,
+                entity=self.entity,
+                schema_entity=schema_entity,
+                database_entity=database_entity,
+                default_sample_config=SampleConfig(
+                    profile_sample=self.source_config.profileSample,
+                    profile_sample_type=self.source_config.profileSampleType,
+                    sampling_method_type=self.source_config.samplingMethodType,
+                ),
+            )
+
+            self.interface: TestSuiteInterface = test_suite_class.create(
+                service_connection_config=self.service_conn_config,
+                ometa_client=self.ometa_client,
+                sampler=sampler_interface,
+                table_entity=self.entity,
+                validator_builder=self.validator_builder_class,
+            )
         return self.interface
 
     def get_data_quality_runner(self) -> DataTestsRunner:

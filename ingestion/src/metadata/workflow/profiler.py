@@ -67,11 +67,13 @@ class ProfilerWorkflow(IngestionWorkflow):
 
     def test_connection(self) -> None:
         service_config = self.config.source.serviceConnection.root.config
-        conn = get_ssl_connection(service_config)
+        
+        if self.config.source.type != 'customdatabase':
+            conn = get_ssl_connection(service_config)
 
-        test_connection_fn = get_test_connection_fn(service_config)
-        result = test_connection_fn(self.metadata, conn, service_config)
-        raise_test_connection_exception(result)
+            test_connection_fn = get_test_connection_fn(service_config)
+            result = test_connection_fn(self.metadata, conn, service_config)
+            raise_test_connection_exception(result)
 
     def _get_sink(self) -> Sink:
         sink_type = self.config.sink.type

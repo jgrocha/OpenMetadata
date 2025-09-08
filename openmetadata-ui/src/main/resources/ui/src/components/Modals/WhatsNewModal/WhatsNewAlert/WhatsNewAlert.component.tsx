@@ -78,7 +78,7 @@ const WhatsNewAlert = () => {
 
   return (
     <>
-      {showWhatsNew.alert && isHomePage && (
+      {false && showWhatsNew.alert && isHomePage && (
         <Affix className="whats-new-alert-container">
           <Card className="cursor-pointer" data-testid="whats-new-alert-card">
             <Space align="start" className="d-flex justify-between">

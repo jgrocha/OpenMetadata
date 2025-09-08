@@ -14,6 +14,7 @@ Profiler Processor Step
 import traceback
 from typing import Optional, cast
 
+from venv import logger
 from metadata.generated.schema.entity.services.ingestionPipelines.status import (
     StackTraceError,
 )
@@ -31,7 +32,10 @@ from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.profiler.api.models import ProfilerProcessorConfig, ProfilerResponse
 from metadata.profiler.processor.core import Profiler
 from metadata.profiler.source.model import ProfilerSourceAndEntity
-
+from metadata.generated.schema.entity.data.table import (Table, ColumnName)
+from metadata.sampler.pandas.pandas_profile import PandasProfiler
+from metadata.generated.schema.entity.data.table import Column as EntityColumn
+from metadata.generated.schema.api.data.createTable import CreateTableRequest
 
 class ProfilerProcessor(Processor):
     """
@@ -55,6 +59,63 @@ class ProfilerProcessor(Processor):
         return "Profiler"
 
     def _run(self, record: ProfilerSourceAndEntity) -> Either[ProfilerResponse]:
+        profiler_runner = None
+
+        if self.config.source.type == 'customdatabase':
+            sourcePythonClass = self.config.source.serviceConnection.root.config.sourcePythonClass
+
+            logger.info('---------------------self.config.source.serviceConnection.root.config.connectionOptions.root[nome]----------------')    
+            logger.info(self.config.source.serviceConnection.root.config.connectionOptions.root['nome'])  
+            base_dir = self.config.source.serviceConnection.root.config.connectionOptions.root['nome']
+                
+            ##Define metadata
+            openMetadataServerConfig = self.config.workflowConfig.openMetadataServerConfig
+            metadata = OpenMetadata(openMetadataServerConfig)
+
+            ##Get Table with customProp's
+            table = metadata.get_by_id(
+                entity=Table, entity_id=record.entity.id.root, fields=['*']
+            )
+
+            if 'resource' in table.extension.root:
+                ficheiro = table.extension.root['resource']
+                
+                # acrescentar se o conteúdo é válido, ié, se é um path com uma das extensões suportadas
+                valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
+                if not any(ficheiro.endswith(ext) for ext in valid_extensions):
+                    return Either()
+
+                if sourcePythonClass == 'connector.excel_connector.ExcelConnector':
+                    profile = PandasProfiler(table, base_dir, ficheiro)
+                    
+                    datatypes = profile.dfPandas.dtypes
+                    columns = []
+
+                    for index, col in enumerate(profile.col_names):
+                        columns.append(
+                            EntityColumn(
+                                name=ColumnName(col),
+                                dataType=profile.getDataType(datatypes[index])
+                        ))
+                    
+                    column_join_table_req = CreateTableRequest(
+                        name=table.name,
+                        databaseSchema=table.databaseSchema.fullyQualifiedName,
+                        columns=columns,
+                    )
+                    table_entity=metadata.create_or_update(data=column_join_table_req)
+
+                    profile.setUp()
+                    profileResult = profile.test_default_profiler()
+
+                    metadata.client.put(
+                        path=f"{metadata.get_suffix(Table)}/{record.entity.id.root}/tableProfile",
+                        data=profileResult.model_dump_json(),
+                    )
+                    return Either()
+            else:
+                return Either()
+
         profiler_runner: Profiler = record.profiler_source.get_profiler_runner(
             record.entity, self.profiler_config
         )
