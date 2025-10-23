@@ -92,9 +92,20 @@ class ExcelProfiler(TestCase):
         self.setTable(table)
         self.setValidator(ValidatorBuilder)
 
-        logger.info(os.path.join(os.getenv("HOME"), 'nextcloud', base, fileName))          
+        base_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, fileName)
+        
+        logger.info(base_path)          
+        
+        check_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, 'etl', fileName)
+        
+        logger.info(check_path)          
+        
+        if os.path.isfile(check_path):
+            resource = check_path
+        else:
+            resource = base_path        
 
-        dfPandas = pd.read_excel(os.path.join(os.getenv("HOME"), 'nextcloud', base, fileName)) #, skiprows=6)
+        dfPandas = pd.read_excel(resource) #, skiprows=6)
         self.setDataFrame(dfPandas)
 
     @classmethod
