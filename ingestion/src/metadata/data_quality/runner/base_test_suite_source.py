@@ -15,6 +15,8 @@ Base source for the data quality used to instantiate a data quality runner with 
 from copy import deepcopy
 from typing import Optional, cast
 from venv import logger
+import validators
+import pandas as pd
 
 from metadata.data_quality.builders.validator_builder import ValidatorBuilder
 from metadata.data_quality.interface.test_suite_interface import TestSuiteInterface
@@ -118,8 +120,15 @@ class BaseTestSuiteRunner:
                 
                 valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
                 if not any(ficheiro.endswith(ext) for ext in valid_extensions):
-                    logger.error('ERROR: File extension not supported.')
-                    return None
+                    if validators.url(ficheiro):
+                        df = pd.read_json(ficheiro, orient='records', convert_dates=True)
+                        df = pd.json_normalize(df['data'], sep ='_')
+                        ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
+                        self.base_dir = ''
+                        df.to_excel(ficheiro, index=False)
+                    else:
+                        logger.error('ERROR: File extension not supported or invalid API URL.')
+                        return None
 
                 profile = ExcelProfiler(table, self.base_dir, ficheiro, self.validator_builder_class)
                 self.interface = profile.setUp()

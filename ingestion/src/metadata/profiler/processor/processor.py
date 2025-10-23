@@ -13,6 +13,8 @@ Profiler Processor Step
 """
 import traceback
 from typing import Optional, cast
+import validators
+import pandas as pd
 
 from venv import logger
 from metadata.generated.schema.entity.services.ingestionPipelines.status import (
@@ -83,7 +85,14 @@ class ProfilerProcessor(Processor):
                 # acrescentar se o conteúdo é válido, ié, se é um path com uma das extensões suportadas
                 valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
                 if not any(ficheiro.endswith(ext) for ext in valid_extensions):
-                    return Either()
+                    if validators.url(ficheiro):
+                        df = pd.read_json(ficheiro, orient='records', convert_dates=True)
+                        df = pd.json_normalize(df['data'], sep ='_')
+                        ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
+                        base_dir = ''
+                        df.to_excel(ficheiro, index=False)
+                    else:
+                        return Either()
 
                 if sourcePythonClass == 'connector.excel_connector.ExcelConnector':
                     profile = PandasProfiler(table, base_dir, ficheiro)
