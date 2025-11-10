@@ -96,8 +96,9 @@ class ExcelProfiler(TestCase):
             resource = fileName
         else:
             base_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, fileName)
-            logger.info(base_path)          
-            check_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, 'etl', fileName)
+            logger.info(base_path) 
+            filename, file_extension = os.path.splitext(fileName)         
+            check_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, 'etl', filename + '.csv')
             logger.info(check_path)          
             if os.path.isfile(check_path):
                 resource = check_path
