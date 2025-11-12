@@ -102,12 +102,14 @@ class PandasProfiler(TestCase):
         
             if os.path.isfile(check_path):
                 resource = check_path
+                dfPandas = pd.read_csv( resource ) #, skiprows=6)
+                
             else:
                 resource = base_path
+                dfPandas = pd.read_excel( resource ) #, skiprows=6)
          
         logger.info(resource)          
                   
-        dfPandas = pd.read_excel( resource ) #, skiprows=6)
         self.setDataFrame(dfPandas)
         self.setColName(list(dfPandas.columns))
 

@@ -102,10 +102,11 @@ class ExcelProfiler(TestCase):
             logger.info(check_path)          
             if os.path.isfile(check_path):
                 resource = check_path
+                dfPandas = pd.read_csv(resource) #, skiprows=6)
             else:
                 resource = base_path        
-
-        dfPandas = pd.read_excel(resource) #, skiprows=6)
+                dfPandas = pd.read_excel(resource) #, skiprows=6)
+        
         self.setDataFrame(dfPandas)
 
     @classmethod
