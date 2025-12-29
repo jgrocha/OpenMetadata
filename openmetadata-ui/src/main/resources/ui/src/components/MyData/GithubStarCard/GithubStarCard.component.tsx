@@ -115,7 +115,9 @@ const GithubStarCard = () => {
     return () => setShowGithubStarPopup(false);
   }, [usernameExistsInCookie, updateGithubPopup]);
 
-  return false && showGithubStarPopup && isHomePage ? (
+  const deixa = false;
+
+  return deixa && showGithubStarPopup && isHomePage ? (
     <Affix
       className={`github-star-popup-card 
       ${

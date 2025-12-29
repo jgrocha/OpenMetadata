@@ -17,6 +17,7 @@ from typing import Optional, cast
 from venv import logger
 import validators
 import pandas as pd
+from osgeo import gdal, ogr, osr
 
 from metadata.data_quality.builders.validator_builder import ValidatorBuilder
 from metadata.data_quality.interface.test_suite_interface import TestSuiteInterface
@@ -100,6 +101,38 @@ class BaseTestSuiteRunner:
         config_copy = cast(DatabaseConnection, config_copy)
 
         return config_copy
+
+    def read_wfs(self, url, layer, output):
+        gdal.SetConfigOption('GDAL_HTTP_UNSAFESSL', 'YES')
+        gdal.UseExceptions()
+        resource = "WFS:" + url
+
+        driver_wfs = ogr.GetDriverByName("WFS")
+        wfs = driver_wfs.Open(resource)
+        input_layer = wfs.GetLayerByName(layer)
+
+        driver_geojson = ogr.GetDriverByName("GeoJSON")
+        outDataSource = driver_geojson.CreateDataSource(output)
+
+        targetprj = ogr.osr.SpatialReference()
+        targetprj.ImportFromEPSG(4326)
+
+        dest_layer = outDataSource.CreateLayer(layer, targetprj, input_layer.GetLayerDefn().GetGeomType(), [])
+
+        sourceprj = input_layer.GetSpatialRef()
+        transform = osr.CoordinateTransformation(sourceprj, targetprj)
+
+        # adding fields to new layer
+        layer_definition = ogr.Feature(input_layer.GetLayerDefn())
+        for i in range(layer_definition.GetFieldCount()):
+            dest_layer.CreateField(layer_definition.GetFieldDefnRef(i))
+        
+        for feature in input_layer:
+            geom = feature.GetGeometryRef()
+            geom.Transform(transform)
+            dest_layer.CreateFeature(feature)
+        
+        return True
 
     def create_data_quality_interface(self) -> TestSuiteInterface:
         """Create data quality interface

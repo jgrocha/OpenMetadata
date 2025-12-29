@@ -14,9 +14,15 @@ Profiler Processor Step
 import traceback
 from typing import Optional, cast
 import validators
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
 import pandas as pd
+import re
+from osgeo import gdal, ogr, osr
 
-from venv import logger
+from metadata.utils.logger import ingestion_logger
+logger = ingestion_logger()
+
 from metadata.generated.schema.entity.services.ingestionPipelines.status import (
     StackTraceError,
 )
@@ -60,6 +66,38 @@ class ProfilerProcessor(Processor):
     def name(self) -> str:
         return "Profiler"
 
+    def read_wfs(self, url, layer, output):
+        gdal.SetConfigOption('GDAL_HTTP_UNSAFESSL', 'YES')
+        gdal.UseExceptions()
+        resource = "WFS:" + url
+
+        driver_wfs = ogr.GetDriverByName("WFS")
+        wfs = driver_wfs.Open(resource)
+        input_layer = wfs.GetLayerByName(layer)
+
+        driver_geojson = ogr.GetDriverByName("GeoJSON")
+        outDataSource = driver_geojson.CreateDataSource(output)
+
+        targetprj = ogr.osr.SpatialReference()
+        targetprj.ImportFromEPSG(4326)
+
+        dest_layer = outDataSource.CreateLayer(layer, targetprj, input_layer.GetLayerDefn().GetGeomType(), [])
+
+        sourceprj = input_layer.GetSpatialRef()
+        transform = osr.CoordinateTransformation(sourceprj, targetprj)
+
+        # adding fields to new layer
+        layer_definition = ogr.Feature(input_layer.GetLayerDefn())
+        for i in range(layer_definition.GetFieldCount()):
+            dest_layer.CreateField(layer_definition.GetFieldDefnRef(i))
+        
+        for feature in input_layer:
+            geom = feature.GetGeometryRef()
+            geom.Transform(transform)
+            dest_layer.CreateFeature(feature)
+        
+        return True
+    
     def _run(self, record: ProfilerSourceAndEntity) -> Either[ProfilerResponse]:
         profiler_runner = None
 
@@ -79,18 +117,38 @@ class ProfilerProcessor(Processor):
                 entity=Table, entity_id=record.entity.id.root, fields=['*']
             )
 
-            if 'resource' in table.extension.root:
+            if table and table.extension and table.extension.root and 'resource' in table.extension.root:
                 ficheiro = table.extension.root['resource']
                 
                 # acrescentar se o conteúdo é válido, ié, se é um path com uma das extensões suportadas
-                valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
+                valid_extensions = ['csv', 'xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
                 if not any(ficheiro.endswith(ext) for ext in valid_extensions):
                     if validators.url(ficheiro):
-                        df = pd.read_json(ficheiro, orient='records', convert_dates=True)
-                        df = pd.json_normalize(df['data'], sep ='_')
-                        ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
-                        base_dir = ''
-                        df.to_excel(ficheiro, index=False)
+        
+                        match = re.search(r"service=wfs", ficheiro, re.IGNORECASE)  
+                        if match:
+                            # Dados num WFS
+                            typename = None
+                            parsed_url = urlparse(ficheiro)
+                            if parsed_url.query:
+                                captured_value = parse_qs(parsed_url.query)
+                                typename = typename if 'typenames' not in captured_value.keys() else captured_value['typenames'][0]
+                                if typename:
+                                    output = '/tmp/{}.geojson'.format(typename)
+                                    self.read_wfs(ficheiro, typename, output)
+                                    print("A guardar camada WFS {} em {}".format(typename, output))
+                                    ficheiro = output
+                            
+                                else:
+                                    print("Não foi possível extrair o typenames do URL {}".format(ficheiro))
+                                    return Either()
+                        else:
+                            # API normal
+                            df = pd.read_json(ficheiro, orient='records', convert_dates=True)
+                            df = pd.json_normalize(df['data'], sep ='_')
+                            ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
+                            base_dir = ''
+                            df.to_excel(ficheiro, index=False)
                     else:
                         return Either()
 
@@ -112,7 +170,8 @@ class ProfilerProcessor(Processor):
                         databaseSchema=table.databaseSchema.fullyQualifiedName,
                         columns=columns,
                     )
-                    table_entity=metadata.create_or_update(data=column_join_table_req)
+                    
+                    profile.table_entity=metadata.create_or_update(data=column_join_table_req)
 
                     profile.setUp()
                     profileResult = profile.test_default_profiler()

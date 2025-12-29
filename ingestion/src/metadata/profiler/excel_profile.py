@@ -92,6 +92,8 @@ class ExcelProfiler(TestCase):
         self.setTable(table)
         self.setValidator(ValidatorBuilder)
 
+        logger.info('ExcelProfiler') 
+
         if base == '':
             resource = fileName
         else:
@@ -100,11 +102,19 @@ class ExcelProfiler(TestCase):
             filename, file_extension = os.path.splitext(fileName)         
             check_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, 'etl', filename + '.csv')
             logger.info(check_path)          
+            if not os.path.isfile(check_path):
+                check_path = os.path.join('/tmp', filename + '.geojson')
+                logger.info(check_path) 
+                
             if os.path.isfile(check_path):
                 resource = check_path
-                dfPandas = pd.read_csv(resource) #, skiprows=6)
             else:
                 resource = base_path        
+                
+            filename, file_extension = os.path.splitext(resource)
+            if file_extension.lower() == '.csv':
+                dfPandas = pd.read_csv(resource) #, skiprows=6)
+            else:   
                 dfPandas = pd.read_excel(resource) #, skiprows=6)
         
         self.setDataFrame(dfPandas)

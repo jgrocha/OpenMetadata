@@ -18,7 +18,9 @@ from datetime import datetime
 from unittest import TestCase, mock
 from unittest.mock import Mock, patch
 from uuid import uuid4
-from venv import logger
+# from venv import logger
+from metadata.utils.logger import ingestion_logger
+logger = ingestion_logger()
 
 import pytest
 import sqlalchemy.types
@@ -58,6 +60,7 @@ from metadata.data_quality.builders.validator_builder import (SourceType,Validat
 from metadata.data_quality.interface.pandas.pandas_test_suite_interface import (PandasTestSuiteInterface,)
 
 import pandas as pd
+import geopandas as gpd
 
 Base = declarative_base()
 
@@ -90,6 +93,8 @@ class PandasProfiler(TestCase):
         self.table_entity = table
         self.setTable(table)
         
+        logger.info('PandasProfiler') 
+        
         if base == '':
             resource = fileName
         else:
@@ -99,16 +104,28 @@ class PandasProfiler(TestCase):
             filename, file_extension = os.path.splitext(fileName)
             check_path = os.path.join(os.getenv("HOME"), 'nextcloud', base, 'etl', filename + '.csv')
             logger.info(check_path)          
+            if not os.path.isfile(check_path):
+                check_path = os.path.join('/tmp', filename + '.geojson')
+                logger.info(check_path) 
         
             if os.path.isfile(check_path):
                 resource = check_path
-                dfPandas = pd.read_csv( resource ) #, skiprows=6)
-                
             else:
                 resource = base_path
-                dfPandas = pd.read_excel( resource ) #, skiprows=6)
+                
+            filename, file_extension = os.path.splitext(resource)
+            if file_extension.lower() == '.csv':
+                dfPandas = pd.read_csv(resource) #, skiprows=6)
+            elif file_extension.lower() == '.geojson':
+                gdf = gpd.read_file(resource) #, skiprows=6)
+                dfPandas = pd.DataFrame(gdf.drop(columns='geometry'))
+            else:   
+                dfPandas = pd.read_excel(resource) #, skiprows=6)                
          
-        logger.info(resource)          
+        # logger.info(resource)          
+        # logger.info('dfPandas.columns----------------------------------')          
+        # logger.info(dfPandas.columns)    
+        # logger.info(dfPandas.dtypes)    
                   
         self.setDataFrame(dfPandas)
         self.setColName(list(dfPandas.columns))
@@ -203,14 +220,18 @@ class PandasProfiler(TestCase):
         return profile
 
     def getDataType(self, dataType):
+        # logger.info('getDataType----------------------------------')          
+        # logger.info(dataType)   
+        res = None
         if dataType == 'geometry':
-            dataType = DataType.GEOMETRY
+            res = DataType.GEOMETRY
         elif dataType == 'float64':
-            dataType = DataType.NUMBER
+            res = DataType.NUMBER
         elif dataType == 'int64':
-            dataType = DataType.INT
+            res = DataType.INT
         elif dataType == 'datetime64[ns]':
-            dataType = DataType.DATE
+            res = DataType.DATE
         else:
-            dataType = DataType.STRING
-        return dataType
+            res = DataType.STRING
+        # logger.info(res)  
+        return res

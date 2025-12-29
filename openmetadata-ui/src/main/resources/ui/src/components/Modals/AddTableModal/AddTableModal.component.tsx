@@ -30,13 +30,18 @@ const AddTableModal: React.FC<AddTableModalProps> = ({
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
-  let entityData = entity;
+  const entityData = entity;
 
   function buildName(e: string) {
-    entityData.name = e.trim().replace(' ', '_').replace(/[-:,\(\)]/g, '').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    entityData.name = e
+      .trim()
+      .replace(/ +/g, '_')
+      .replace(/[-:,()]/g, '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
     form.setFieldsValue(entityData);
   }
-  
+
   const handleSave: FormProps['onFinish'] = async (obj) => {
     setIsLoading(true);
     await form.validateFields();
@@ -85,7 +90,10 @@ const AddTableModal: React.FC<AddTableModalProps> = ({
           />
         </Form.Item>
         <Form.Item label={t('label.display-name')} name="displayName">
-          <SanitizedInput onChange={(e) => buildName(e.target.value)} placeholder={t('message.enter-display-name')} />
+          <SanitizedInput
+            placeholder={t('message.enter-display-name')}
+            onChange={(e) => buildName(e.target.value)}
+          />
         </Form.Item>
 
         {additionalFields}
