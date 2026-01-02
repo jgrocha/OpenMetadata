@@ -93,7 +93,7 @@ class PandasProfiler(TestCase):
         self.table_entity = table
         self.setTable(table)
         
-        logger.info('PandasProfiler') 
+        # logger.info('PandasProfiler') 
         
         if base == '':
             resource = fileName
@@ -113,20 +113,20 @@ class PandasProfiler(TestCase):
             else:
                 resource = base_path
                 
-            filename, file_extension = os.path.splitext(resource)
-            if file_extension.lower() == '.csv':
-                dfPandas = pd.read_csv(resource) #, skiprows=6)
-            elif file_extension.lower() == '.geojson':
-                gdf = gpd.read_file(resource) #, skiprows=6)
-                dfPandas = pd.DataFrame(gdf.drop(columns='geometry'))
-            else:   
-                dfPandas = pd.read_excel(resource) #, skiprows=6)                
-         
-        # logger.info(resource)          
+        logger.info(resource)          
+        filename, file_extension = os.path.splitext(resource)
+        if file_extension.lower() == '.csv':
+            dfPandas = pd.read_csv(resource) #, skiprows=6)
+        elif file_extension.lower() == '.geojson':
+            gdf = gpd.read_file(resource) #, skiprows=6)
+            dfPandas = pd.DataFrame(gdf.drop(columns='geometry'))
+        else:   
+            dfPandas = pd.read_excel(resource) #, skiprows=6)                
+        
         # logger.info('dfPandas.columns----------------------------------')          
         # logger.info(dfPandas.columns)    
         # logger.info(dfPandas.dtypes)    
-                  
+                
         self.setDataFrame(dfPandas)
         self.setColName(list(dfPandas.columns))
 

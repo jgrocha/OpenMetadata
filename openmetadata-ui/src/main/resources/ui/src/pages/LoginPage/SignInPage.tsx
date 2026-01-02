@@ -19,8 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import IconAuth0 from '../../assets/img/icon-auth0.png';
 import IconCognito from '../../assets/img/icon-aws-cognito.png';
-import IconAzure from '../../assets/img/icon-azure.png';
 import IconGoogle from '../../assets/img/icon-google.png';
+import IconGRA from '../../assets/img/icon-gra-logo-pt.png';
 import IconOkta from '../../assets/img/icon-okta.png';
 import loginBG from '../../assets/img/login-bg.png';
 import { ReactComponent as IconFailBadge } from '../../assets/svg/fail-badge.svg';
@@ -95,9 +95,15 @@ const SignInPage = () => {
 
         break;
       }
-      case AuthProvider.Azure: {
+      /* case AuthProvider.Azure: {
         ssoBrandLogo = IconAzure;
         ssoBrandName = 'Azure';
+
+        break;
+      } */
+      case AuthProvider.Azure: {
+        ssoBrandLogo = IconGRA;
+        ssoBrandName = 'ENTRA.ID';
 
         break;
       }
