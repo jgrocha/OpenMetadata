@@ -463,7 +463,7 @@ const SchemaTable = ({
         filterDropdown: ColumnFilter,
         onFilter: searchTagInData,
       },
-      {
+      /* {
         title: t('label.glossary-term-plural'),
         dataIndex: 'tags',
         key: 'glossary',
@@ -494,7 +494,7 @@ const SchemaTable = ({
         filters: tagFilter.Glossary,
         filterDropdown: ColumnFilter,
         onFilter: searchTagInData,
-      },
+      }, */
       {
         title: t('label.data-quality'),
         dataIndex: 'dataQualityTest',

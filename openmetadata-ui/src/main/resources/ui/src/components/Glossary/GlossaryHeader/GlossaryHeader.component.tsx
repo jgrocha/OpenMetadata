@@ -524,6 +524,7 @@ const GlossaryHeader = ({
     const newData = [
       {
         name: 'Glossaries',
+        // name: 'Processos',
         url: getGlossaryPath(arr[0]),
         activeTitle: false,
       },

@@ -163,10 +163,13 @@ export const getSupportedPipelineTypes = (serviceDetails: ServicesType) => {
   Object.keys(pipelineMapping).forEach((key) => {
     if (config[key as keyof Connection]) {
       pipelineType.push(...pipelineMapping[key]);
-    } else if (serviceDetails?.serviceType === 'CustomDatabase' && (key === 'supportsMetadataExtraction' || key === 'supportsProfiler')) {
+    } else if (
+      serviceDetails?.serviceType === 'CustomDatabase' &&
+      (key === 'supportsMetadataExtraction' || key === 'supportsProfiler')
+    ) {
       pipelineType.push(...pipelineMapping[key]);
     }
-  });  
+  });
 
   return uniq(pipelineType);
 };

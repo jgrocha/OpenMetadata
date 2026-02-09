@@ -128,6 +128,8 @@ class ProfilerProcessor(Processor):
                         match = re.search(r"service=wfs", ficheiro, re.IGNORECASE)  
                         if match:
                             # Dados num WFS
+                            logger.info('---------------------WFS----------------')    
+                            logger.info(ficheiro)
                             typename = None
                             parsed_url = urlparse(ficheiro)
                             if parsed_url.query:
@@ -144,6 +146,8 @@ class ProfilerProcessor(Processor):
                                     return Either()
                         else:
                             # API normal
+                            logger.info('---------------------API----------------')  
+                            logger.info(ficheiro)
                             df = pd.read_json(ficheiro, orient='records', convert_dates=True)
                             df = pd.json_normalize(df['data'], sep ='_')
                             ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
@@ -152,10 +156,11 @@ class ProfilerProcessor(Processor):
                     else:
                         return Either()
 
-                if sourcePythonClass == 'connector.excel_connector.ExcelConnector':
+                if sourcePythonClass == 'connector.excel_connector.ExcelConnector' or sourcePythonClass == 'connector.geonetwork_connector.GeonetworkConnector':
                     profile = PandasProfiler(table, base_dir, ficheiro)
-                    
+
                     datatypes = profile.dfPandas.dtypes
+
                     columns = []
 
                     for index, col in enumerate(profile.col_names):

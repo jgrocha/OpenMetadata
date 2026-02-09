@@ -134,6 +134,7 @@ export const getGlossaryBreadcrumbs = (fqn: string) => {
   const breadcrumbList = [
     {
       name: 'Glossaries',
+      // name: 'Processos',
       url: getGlossaryPath(''),
       activeTitle: false,
     },

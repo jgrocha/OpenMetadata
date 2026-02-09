@@ -13,6 +13,7 @@
 Excel Profiler
 """
 import os
+import resource
 import sys
 from datetime import datetime
 from unittest import TestCase, mock
@@ -116,7 +117,10 @@ class PandasProfiler(TestCase):
         logger.info(resource)          
         filename, file_extension = os.path.splitext(resource)
         if file_extension.lower() == '.csv':
-            dfPandas = pd.read_csv(resource) #, skiprows=6)
+            try:
+                dfPandas = pd.read_csv(resource)
+            except pd.errors.ParserError as e:
+                dfPandas = pd.read_csv(resource, sep=';')
         elif file_extension.lower() == '.geojson':
             gdf = gpd.read_file(resource) #, skiprows=6)
             dfPandas = pd.DataFrame(gdf.drop(columns='geometry'))
@@ -127,6 +131,20 @@ class PandasProfiler(TestCase):
         # logger.info(dfPandas.columns)    
         # logger.info(dfPandas.dtypes)    
                 
+        # logger.info('---------------------Corrigir tipos DATETIME----------------') 
+        for k in dfPandas.dtypes.keys():
+            logger.info("{} {}".format(k, dfPandas.dtypes[k]))
+            if dfPandas.dtypes[k] == 'object':
+                dfPandas[k] = pd.to_datetime(dfPandas[k], errors='ignore', format='%Y-%m-%d')
+                dfPandas[k] = pd.to_datetime(dfPandas[k], errors='ignore', format='%d-%m-%Y')
+                dfPandas[k] = pd.to_datetime(dfPandas[k], errors='ignore', format='%d/%m/%Y')
+                dfPandas[k] = pd.to_datetime(dfPandas[k], errors='ignore', format='ISO8601')
+                dfPandas[k] = pd.to_datetime(dfPandas[k], errors='ignore', format='%Y-%m-%dT%H:%M:%SZ')
+        
+        # logger.info('dfPandas.columns----------------------------------')          
+        # logger.info(dfPandas.columns)    
+        # logger.info(dfPandas.dtypes)  
+                                                    
         self.setDataFrame(dfPandas)
         self.setColName(list(dfPandas.columns))
 
@@ -235,3 +253,4 @@ class PandasProfiler(TestCase):
             res = DataType.STRING
         # logger.info(res)  
         return res
+

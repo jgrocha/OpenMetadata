@@ -15,7 +15,7 @@ import { Button, Col, Divider, Row, Space, Tooltip, Typography } from 'antd';
 import ButtonGroup from 'antd/lib/button/button-group';
 import { AxiosError } from 'axios';
 import classNames from 'classnames';
-import { capitalize, get, isEmpty } from 'lodash';
+import { get, isEmpty } from 'lodash';
 import QueryString from 'qs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +72,6 @@ import AnnouncementCard from '../../common/EntityPageInfos/AnnouncementCard/Anno
 import AnnouncementDrawer from '../../common/EntityPageInfos/AnnouncementDrawer/AnnouncementDrawer';
 import ManageButton from '../../common/EntityPageInfos/ManageButton/ManageButton';
 import TitleBreadcrumb from '../../common/TitleBreadcrumb/TitleBreadcrumb.component';
-import RetentionPeriod from '../../Database/RetentionPeriod/RetentionPeriod.component';
 import Voting from '../../Entity/Voting/Voting.component';
 import { VotingDataProps } from '../../Entity/Voting/voting.interface';
 import MetricHeaderInfo from '../../Metric/MetricHeaderInfo/MetricHeaderInfo';
@@ -505,13 +504,13 @@ export const DataAssetsHeader = ({
                   </Space>
                 </TierCard>
 
-                {entityType === EntityType.TABLE && onUpdateRetentionPeriod && (
+                {/* {entityType === EntityType.TABLE && onUpdateRetentionPeriod && (
                   <RetentionPeriod
                     hasPermission={permissions.EditAll && !dataAsset.deleted}
                     retentionPeriod={(dataAsset as Table).retentionPeriod}
                     onUpdate={onUpdateRetentionPeriod}
                   />
-                )}
+                )} */}
 
                 {entityType === EntityType.METRIC && onMetricUpdate && (
                   <MetricHeaderInfo
@@ -521,7 +520,7 @@ export const DataAssetsHeader = ({
                   />
                 )}
 
-                {extraInfo}
+                {/* {extraInfo} */}
               </div>
             </Col>
           </Row>

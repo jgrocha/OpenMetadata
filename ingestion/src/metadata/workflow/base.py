@@ -189,6 +189,10 @@ class BaseWorkflow(ABC, WorkflowStatusMixin):
     def raise_from_status_internal(self, raise_warnings=False) -> None:
         """Based on the internal workflow status, raise a WorkflowExecutionError"""
         for step in self.workflow_steps():
+            logger.warning("Step----------------------------------------------------------------------------")
+            logger.warning(step)
+            logger.warning(step.get_status())
+            logger.warning(step.get_status().failures)
             if (
                 step.get_status().failures
                 and step.get_status().calculate_success()

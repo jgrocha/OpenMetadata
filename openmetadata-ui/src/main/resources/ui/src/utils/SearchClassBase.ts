@@ -286,6 +286,7 @@ class SearchClassBase {
             data: {
               entityType: EntityType.GLOSSARY_TERM,
               isStatic: true,
+              // dataId: 'Processos',
               dataId: 'Glossaries',
             },
           },

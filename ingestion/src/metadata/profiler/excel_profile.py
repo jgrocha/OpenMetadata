@@ -113,7 +113,10 @@ class ExcelProfiler(TestCase):
                 
             filename, file_extension = os.path.splitext(resource)
             if file_extension.lower() == '.csv':
-                dfPandas = pd.read_csv(resource) #, skiprows=6)
+                try:
+                    dfPandas = pd.read_csv(resource)
+                except pd.errors.ParserError as e:
+                    dfPandas = pd.read_csv(resource, sep=';')
             else:   
                 dfPandas = pd.read_excel(resource) #, skiprows=6)
         

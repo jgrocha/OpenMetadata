@@ -370,6 +370,7 @@ export const MOCK_EXPLORE_TAB_ITEMS = [
   {
     key: 'glossary_term_search_index',
     label: 'Glossaries',
+    // label: 'Processos',
     count: 0,
   },
   {
