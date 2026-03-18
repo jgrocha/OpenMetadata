@@ -114,9 +114,11 @@ class ExcelProfiler(TestCase):
             filename, file_extension = os.path.splitext(resource)
             if file_extension.lower() == '.csv':
                 try:
-                    dfPandas = pd.read_csv(resource)
-                except pd.errors.ParserError as e:
-                    dfPandas = pd.read_csv(resource, sep=';')
+                    dfPandas = pd.read_csv(resource, sep=None, engine='python', encoding='utf-8-sig')  
+                    logger.info("DataFrame created from CSV file {} with UTF-8 encoding".format(resource))
+                except UnicodeDecodeError as e:
+                    dfPandas = pd.read_csv(resource, sep=None, engine='python', encoding='iso-8859-15')
+                    logger.info("DataFrame created from CSV file {} with iso-8859-15 encoding".format(resource))
             else:   
                 dfPandas = pd.read_excel(resource) #, skiprows=6)
         

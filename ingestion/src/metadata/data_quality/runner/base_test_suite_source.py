@@ -151,7 +151,7 @@ class BaseTestSuiteRunner:
             if 'resource' in table.extension.root and self.base_dir is not None:
                 ficheiro = table.extension.root['resource']
                 
-                valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
+                valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt', 'csv']
                 if not any(ficheiro.endswith(ext) for ext in valid_extensions):
                     if validators.url(ficheiro):
                         df = pd.read_json(ficheiro, orient='records', convert_dates=True)

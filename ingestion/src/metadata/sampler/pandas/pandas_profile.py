@@ -117,10 +117,12 @@ class PandasProfiler(TestCase):
         logger.info(resource)          
         filename, file_extension = os.path.splitext(resource)
         if file_extension.lower() == '.csv':
+            
             try:
-                dfPandas = pd.read_csv(resource)
-            except pd.errors.ParserError as e:
-                dfPandas = pd.read_csv(resource, sep=';')
+                dfPandas = pd.read_csv(resource, sep=None, engine='python', encoding='utf-8-sig')  
+            except UnicodeDecodeError as e:
+                dfPandas = pd.read_csv(resource, sep=None, engine='python', encoding='iso-8859-15')
+                
         elif file_extension.lower() == '.geojson':
             gdf = gpd.read_file(resource) #, skiprows=6)
             dfPandas = pd.DataFrame(gdf.drop(columns='geometry'))
