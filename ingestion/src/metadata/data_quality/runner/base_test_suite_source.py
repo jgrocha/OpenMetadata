@@ -18,6 +18,9 @@ from venv import logger
 import validators
 import pandas as pd
 from osgeo import gdal, ogr, osr
+import requests
+from io import StringIO
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from metadata.data_quality.builders.validator_builder import ValidatorBuilder
 from metadata.data_quality.interface.test_suite_interface import TestSuiteInterface
@@ -42,6 +45,9 @@ from metadata.utils.service_spec.service_spec import (
 )
 from metadata.profiler.excel_profile import ExcelProfiler
 from metadata.utils.logger import test_suite_logger
+
+# Disable only the InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class BaseTestSuiteRunner:
     """Base class for the data quality runner"""
@@ -154,8 +160,10 @@ class BaseTestSuiteRunner:
                 valid_extensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt', 'csv']
                 if not any(ficheiro.endswith(ext) for ext in valid_extensions):
                     if validators.url(ficheiro):
-                        df = pd.read_json(ficheiro, orient='records', convert_dates=True)
-                        df = pd.json_normalize(df['data'], sep ='_')
+                        # df = pd.read_json(ficheiro, orient='records', convert_dates=True)
+                        df = pd.read_json(StringIO(requests.get(ficheiro, verify=False).text), orient='records', convert_dates=True)
+                        if "data" in list(df.columns):
+                            df = pd.json_normalize(df['data'], sep ='_')
                         ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
                         self.base_dir = ''
                         df.to_excel(ficheiro, index=False)

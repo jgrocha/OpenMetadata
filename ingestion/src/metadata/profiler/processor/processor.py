@@ -19,6 +19,9 @@ from urllib.parse import parse_qs
 import pandas as pd
 import re
 from osgeo import gdal, ogr, osr
+import requests
+from io import StringIO
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from metadata.utils.logger import ingestion_logger
 logger = ingestion_logger()
@@ -44,6 +47,9 @@ from metadata.generated.schema.entity.data.table import (Table, ColumnName)
 from metadata.sampler.pandas.pandas_profile import PandasProfiler
 from metadata.generated.schema.entity.data.table import Column as EntityColumn
 from metadata.generated.schema.api.data.createTable import CreateTableRequest
+
+# Disable only the InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class ProfilerProcessor(Processor):
     """
@@ -148,8 +154,9 @@ class ProfilerProcessor(Processor):
                             # API normal
                             logger.info('---------------------API----------------')  
                             logger.info(ficheiro)
-                            df = pd.read_json(ficheiro, orient='records', convert_dates=True)
-                            df = pd.json_normalize(df['data'], sep ='_')
+                            df = pd.read_json(StringIO(requests.get(ficheiro, verify=False).text), orient='records', convert_dates=True)
+                            if "data" in list(df.columns):
+                                df = pd.json_normalize(df['data'], sep ='_')
                             ficheiro = '/tmp/{}.xlsx'.format(table.name.root)
                             base_dir = ''
                             df.to_excel(ficheiro, index=False)
