@@ -94,7 +94,7 @@ class PandasProfiler(TestCase):
         self.table_entity = table
         self.setTable(table)
         
-        # logger.info('PandasProfiler') 
+        logger.info('PandasProfiler') 
         
         if base == '':
             resource = fileName

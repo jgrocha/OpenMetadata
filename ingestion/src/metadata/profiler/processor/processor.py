@@ -127,7 +127,7 @@ class ProfilerProcessor(Processor):
                 ficheiro = table.extension.root['resource']
                 
                 # acrescentar se o conteúdo é válido, ié, se é um path com uma das extensões suportadas
-                valid_extensions = ['csv', 'xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt']
+                valid_extensions = ['csv', 'xls', 'xlsx', 'xlsm', 'xlsb', 'odf', 'ods', 'odt', 'geojson']
                 if not any(ficheiro.endswith(ext) for ext in valid_extensions):
                     if validators.url(ficheiro):
         
